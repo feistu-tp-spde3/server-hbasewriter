@@ -46,7 +46,7 @@ public class HBaseWriter
 
     public static void WriteToHBase()
     {
-        System.out.println("Starting HBaseWriter!");
+        System.out.println("[HBaseWriter] Starting HBaseWriter!");
         Configuration config = HBaseConfiguration.create();
         config.addResource(new Path(System.getenv("HBASE_CONF_DIR"), "hbase-site.xml"));
 
@@ -58,7 +58,7 @@ public class HBaseWriter
         {
             connection = ConnectionFactory.createConnection(config);
             table = connection.getTable(TableName.valueOf(tableName));
-            System.out.println("Connection established!");
+            System.out.println("[HBaseWriter] Connection with HBase established!");
 
             for(Packet p : finalPackets)
             {
@@ -74,36 +74,36 @@ public class HBaseWriter
                 id++;
             }
 
-            System.out.println("Data written: " + finalPackets.size());
+            System.out.println("[HBaseWriter] Data written: " + finalPackets.size());
         }
         catch(Exception e)
         {
-            System.out.println("Connection error!");
+            System.out.println("[HBaseWriter] Connection error!");
         }
         finally
         {
             try
             {
-                if(table != null)
-                {
-                   table.close();
-                }
+                    if(table != null)
+                    {
+                       table.close();
+                    }
 
-                if(connection != null && !connection.isClosed())
-                {
-                   connection.close();
-                }
+                    if(connection != null && !connection.isClosed())
+                    {
+                       connection.close();
+                    }
             }
             catch(Exception e2)
             {
-                System.out.println("Error in connection closing!");
+                    System.out.println("Error in connection closing!");
             }
         }
     }
 
     public static void main(String[] args) throws Exception
     {
-        System.out.println("Listening on port 9999!");
+        System.out.println("[HBaseWriter] Listening on port 9999!");
         ServerSocket serverSocket = new ServerSocket(9999);
 
         while(true)
@@ -111,8 +111,8 @@ public class HBaseWriter
            try
            {
                 Socket connectionSocket = serverSocket.accept();
-                System.out.println("Connection established!");
-
+                
+                System.out.println("[HBaseWriter] Connection with agent established! IP: " + connectionSocket.getInetAddress().getHostAddress());
                 DataInputStream input = new DataInputStream(connectionSocket.getInputStream());
                 String data = "";
                 byte[] buffer = new byte[1024];
@@ -120,13 +120,10 @@ public class HBaseWriter
 
                 // Receive 4 bytes in big endian order, convert them to a integer in little endian order
                 // The agent will send that amount of data
-                //
-                // This was done because TCP does not guarantee to deliver all bytes at once. So
-                // first we get # of bytes to receive & start reading them from the socket.
                 byte[] len_bytes = new byte[4];
                 if (input.read(len_bytes) != len_bytes.length)
                 {
-                    System.out.println("Didnt receive enough bytes for length of data");
+                    System.out.println("[HBaseWriter] Did not receive enough bytes for length of data");
                     continue;
                 }
 
@@ -134,7 +131,7 @@ public class HBaseWriter
                 wrapped.order(ByteOrder.LITTLE_ENDIAN);
                 int data_length = wrapped.getInt();
 
-                System.out.println("Preparing to receive " + data_length);
+                System.out.println("[HBaseWriter] Preparing to receive " + data_length);
 
                 boolean end = false;
                 int bytes_read = 0;
@@ -187,7 +184,7 @@ public class HBaseWriter
                     finalPackets.add(packet);
                 }
 
-                System.out.println("Packets parsed: " + finalPackets.size());
+                System.out.println("[HBaseWriter] Packets parsed: " + finalPackets.size());
                 WriteToHBase();
                 finalPackets.clear();
             }
